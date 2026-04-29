@@ -1,6 +1,6 @@
 # 节点订阅池 —— 多源代理节点聚合与订阅分发服务
 
-[![GitHub](https://img.shields.io/badge/GitHub-fmc999/Node__js---181717?logo=github)](https://github.com/fmc999/Node_js-)
+[![GitHub](https://img.shields.io/badge/GitHub-fmc999/Node__js--SUB-181717?logo=github)](https://github.com/fmc999/Node_js-SUB)
 ![CPU](https://img.shields.io/badge/CPU-1vCPU_AMD_EPYC--Genoa-f0f6fc?logo=amd)
 ![内存](https://img.shields.io/badge/内存-256_MB-f0f6fc)
 ![硬盘](https://img.shields.io/badge/硬盘-1_GiB-f0f6fc)
@@ -200,7 +200,7 @@ sudo apt-get install -y nodejs
 
 ```bash
 node -v
-# 预期输出类似：v20.11.0（版本号 >= 12 即可）
+# 预期输出类似：v20.11.0（版本号 >= 12 即可） 
 ```
 
 > **常见问题**：如果 `curl` 报 command not found，先执行 `sudo apt-get install -y curl`
@@ -210,8 +210,8 @@ node -v
 在你的 **Windows 电脑**上打开 PowerShell（不是 CMD），执行：
 
 ```powershell
-# 上传 blog 文件夹到服务器的 /root 目录下
-scp -r C:\Users\Administrator\Desktop\节点订阅池\blog root@你的服务器IP:/root/
+# 上传 blog 文件夹到服务器的 /root/Node_js-SUB/blog/ 目录下
+scp -r C:\Users\Administrator\Desktop\Node_js-SUB\blog root@你的服务器IP:/root/Node_js-SUB/blog/
 ```
 
 - `scp` 是安全拷贝命令，`-r` 表示递归传整个文件夹
@@ -220,7 +220,7 @@ scp -r C:\Users\Administrator\Desktop\节点订阅池\blog root@你的服务器I
 传输完成后回到 **服务器终端**，确认文件已到位：
 
 ```bash
-ls ~/blog
+ls ~/Node_js-SUB/blog
 # 预期输出：server.js  data/
 ```
 
@@ -229,7 +229,7 @@ ls ~/blog
 先在前台跑一下，确认没问题：
 
 ```bash
-cd ~/blog
+cd ~/Node_js-SUB/blog
 node server.js
 ```
 
@@ -237,7 +237,7 @@ node server.js
 
 ```
 [Server] running at http://localhost:80
-[Server] data dir: /root/blog/data
+[Server] data dir: /root/Node_js-SUB/blog/data
 [Server] routes: / | /post | /fmc | *.uuidban
 ```
 
@@ -259,7 +259,7 @@ node server.js
 sudo npm install -g pm2
 
 # 用 PM2 启动
-cd ~/blog
+cd ~/Node_js-SUB/blog
 pm2 start server.js --name "node-pool"
 
 # 设置开机自启
@@ -350,21 +350,21 @@ https://你的域名/sub.uuidban
 **方式 A：Git 克隆（推荐，后续更新方便）**
 
 ```bash
-git clone https://github.com/fmc999/Node_js-.git ~/节点订阅池
-cd ~/节点订阅池/blog
+git clone https://github.com/fmc999/Node_js-SUB.git ~/Node_js-SUB
+cd ~/blog
 ```
 
 **方式 B：SCP 上传**
 
 ```bash
 # 在本地执行
-scp -r c:/Users/Administrator/Desktop/节点订阅池/blog root@你的服务器IP:~/
+scp -r c:/Users/Administrator/Desktop/Node_js-SUB/blog root@你的服务器IP:~/Node_js-SUB/blog/
 ```
 
 **方式 C：直接 SCP 上传整个项目**
 
 ```bash
-scp -r c:/Users/Administrator/Desktop/节点订阅池 root@你的服务器IP:~/节点订阅池
+scp -r c:/Users/Administrator/Desktop/Node_js-SUB/blog root@你的服务器IP:~/Node_js-SUB/blog/
 ```
 
 ---
@@ -381,7 +381,7 @@ node -v   # 应 >= 18.x
 npm -v
 
 # 3. 进入项目目录
-cd ~/blog  # 或 ~/节点订阅池/blog
+cd ~/Node_js-SUB/blog
 
 # 4. 如需修改端口（80 端口可能被占用）
 vi server.js   # 修改第 7 行 const PORT = 80 为其他端口如 3000
@@ -394,7 +394,7 @@ node server.js
 
 ```
 [Server] running at http://localhost:80
-[Server] data dir: /root/blog/data
+[Server] data dir: /root/Node_js-SUB/blog/data
 [Server] routes: / | /post | /fmc | *.uuidban
 ```
 
@@ -593,7 +593,7 @@ sudo ufw status
 
 ```bash
 # 1. 确认 nodes.txt 有内容
-cat ~/blog/data/nodes.txt | wc -l
+cat ~/Node_js-SUB/blog/data/nodes.txt | wc -l
 
 # 2. 确认服务在运行
 pm2 list
