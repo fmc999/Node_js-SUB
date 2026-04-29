@@ -1,8 +1,13 @@
 # 节点订阅池 —— 多源代理节点聚合与订阅分发服务
 
 [![GitHub](https://img.shields.io/badge/GitHub-fmc999/Node__js---181717?logo=github)](https://github.com/fmc999/Node_js-)
+![CPU](https://img.shields.io/badge/CPU-1vCPU_AMD_EPYC--Genoa-f0f6fc?logo=amd)
+![内存](https://img.shields.io/badge/内存-256_MB-f0f6fc)
+![硬盘](https://img.shields.io/badge/硬盘-1_GiB-f0f6fc)
+![网络](https://img.shields.io/badge/网络-1_Gbps-f0f6fc)
+![系统](https://img.shields.io/badge/系统-Debian_12-f0f6fc?logo=debian)
 
-一个基于 Node.js 的轻量级代理节点订阅聚合服务器。支持从多个外部订阅源拉取节点、自动去重合并、定时更新，并通过 Base64 编码以标准订阅格式对外分发。内置现代化管理后台、伪装首页与博客系统，兼具安全性、隐蔽性与易用性。
+一个基于 Node.js 的轻量级代理节点订阅聚合服务器，最低仅需 256MB 内存即可运行。支持从多个外部订阅源拉取节点、自动去重合并、定时更新，并通过 Base64 编码以标准订阅格式对外分发。内置现代化管理后台、伪装首页与博客系统，兼具安全性、隐蔽性与易用性。
 
 ---
 
