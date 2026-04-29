@@ -163,7 +163,7 @@
 |--------|------|
 | **路由白名单** | 仅允许 `/`、`/fmc`、`/post`、`*.uuidban` 四条路由，其余一律 404 |
 | **HTTP 方法限制** | 仅允许 GET / POST / HEAD，其余返回 405 Method Not Allowed |
-| **SSRF 防护** | `fetchExternalSubscription` 校验 URL 协议仅限 http/https，屏蔽 localhost / 127.0.0.1 / 10.x / 192.168.x / 172.16-31.x / 169.254.169.254 / .local 等内网地址 |
+| **SSRF 防护** | `fetchExternalSubscription` 校验 URL 协议仅限 http/https，屏蔽 localhost / 127.0.0.1 / 10.x / 192.168.x / 172.16-31.x / .local 等内网地址 |
 | **路径穿越防护** | 所有文件读写通过 `path.resolve()` + `startsWith()` 严格限制在 `data/` 目录内，防止 `../` 逃逸 |
 | **请求体大小限制** | POST 请求体限制 1MB，超出直接销毁连接，防止内存耗尽 |
 | **安全响应头** | 全局注入 `X-Content-Type-Options: nosniff`、`X-Frame-Options: DENY`、`X-XSS-Protection`、`Referrer-Policy: no-referrer`、移除 `X-Powered-By` |
