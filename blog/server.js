@@ -96,7 +96,7 @@ function isValidSubscriptionUrl(subUrl) {
         if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
         const blocked = ['localhost', '127.0.0.1', '0.0.0.0', '::1', '[::1]'];
         if (blocked.includes(u.hostname)) return false;
-        if (u.hostname === '你的服务器IP') return false;
+        if (u.hostname === '169.254.169.254') return false;
         if (u.hostname.endsWith('.local')) return false;
         if (u.hostname.startsWith('10.') || u.hostname.startsWith('192.168.')) return false;
         if (u.hostname.startsWith('172.')) {
