@@ -181,14 +181,14 @@
 
 - **一台服务器**：Linux（Ubuntu/Debian/CentOS 均可），至少 256MB 内存
 - **一个域名**（可选但推荐）：用于配置 HTTPS，没有的话直接用 IP 也行
-- **你的电脑**：Windows/Mac 均可，需要能 SSH 连到服务器
+- **你的电脑**：Mac/Linux 均可，需要能 SSH 连到服务器
 
 ### 第 1 步：安装 Node.js
 
 项目只需要 Node.js，版本 >= 12 就行（建议装 18 或 20）。
 
 ```bash
-# 连接到你的服务器（在你的电脑上打开终端/CMD执行）
+# 连接到你的服务器（打开终端执行）
 ssh root@你的服务器IP
 
 # 安装 Node.js 20.x（长期支持版）
@@ -205,22 +205,12 @@ node -v
 
 > **常见问题**：如果 `curl` 报 command not found，先执行 `sudo apt-get install -y curl`
 
-### 第 2 步：把代码传到服务器
-
-在你的 **Windows 电脑**上打开 PowerShell（不是 CMD），执行：
-
-```powershell
-# 上传 blog 文件夹到服务器的 /root/Node_js-SUB/blog/ 目录下
-scp -r C:\Users\Administrator\Desktop\Node_js-SUB\blog root@你的服务器IP:/root/Node_js-SUB/blog/
-```
-
-- `scp` 是安全拷贝命令，`-r` 表示递归传整个文件夹
-- 输入服务器密码后等待传输完成（文件很小，几秒就好）
-
-传输完成后回到 **服务器终端**，确认文件已到位：
+### 第 2 步：克隆代码到服务器
 
 ```bash
-ls ~/Node_js-SUB/blog
+git clone https://github.com/fmc999/Node_js-SUB.git ~/Node_js-SUB
+cd ~/Node_js-SUB/blog
+ls
 # 预期输出：server.js  data/
 ```
 
@@ -351,20 +341,7 @@ https://你的域名/sub.uuidban
 
 ```bash
 git clone https://github.com/fmc999/Node_js-SUB.git ~/Node_js-SUB
-cd ~/blog
-```
-
-**方式 B：SCP 上传**
-
-```bash
-# 在本地执行
-scp -r c:/Users/Administrator/Desktop/Node_js-SUB/blog root@你的服务器IP:~/Node_js-SUB/blog/
-```
-
-**方式 C：直接 SCP 上传整个项目**
-
-```bash
-scp -r c:/Users/Administrator/Desktop/Node_js-SUB/blog root@你的服务器IP:~/Node_js-SUB/blog/
+cd ~/Node_js-SUB/blog
 ```
 
 ---
