@@ -550,7 +550,7 @@ https://你的域名/fmc
 https://你的域名/任意名称.uuidban
 ```
 
-例如 `https://example.com/sub.uuidban`，填入 Clash / V2RayN / Sing-box 等客户端即可使用。
+例如 `https://example.com/sub.uuidban`，填入 V2RayN / Sing-box 等客户端即可使用。
 
 ---
 
