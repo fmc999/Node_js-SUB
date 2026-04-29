@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>爱心弹窗·暖心小助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none; /* 避免拖动时选中文字 */
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;          /* 禁止滚动条，弹窗基于视口fixed定位 */
+            background: #f9f3f0;
+            font-family: 'Segoe UI', '微软雅黑', 'PingFang SC', Roboto, sans-serif;
+            cursor: default;
+            position: relative;
+        }
+
+        /* 弹窗样式 — 模拟原生窗口风格 */
+        .floating-popup {
+            position: fixed;
+            width: 180px;
+            height: 80px;
+            border-radius: 20px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(0px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: move;
+            transition: box-shadow 0.1s ease;
+            will-change: left, top;
+            z-index: 1000;
+            font-weight: bold;
+            padding: 12px;
+            word-break: break-word;
+            box-sizing: border-box;
+            border: 1px solid rgba(255,255,240,0.5);
+        }
+
+        .floating-popup:hover {
+            box-shadow: 0 18px 32px rgba(0, 0, 0, 0.25);
+            transform: scale(1.01);
+            transition: transform 0.1s ease;
+        }
+
+        /* 弹窗内部文字 */
+        .popup-text {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.3;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.4);
+            letter-spacing: 1px;
+        }
+
+        /* 右键关闭提示小标 (优雅的小尾巴) */
+        .popup-close-hint {
+            position: absolute;
+            bottom: 6px;
+            right: 12px;
+            font-size: 10px;
+            opacity: 0.5;
+            color: #444;
+            pointer-events: none;
+            font-weight: normal;
+        }
+
+        /* 简单的小控制台提示 (可选, 不干扰体验) */
+        .info-note {
+            position: fixed;
+            bottom: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.5);
+            color: #eee;
+            font-size: 12px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            z-index: 9999;
+            pointer-events: none;
+            font-family: monospace;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body>
+<div class="info-note">❤️ 爱心弹窗中 · 可拖拽 | 右键关闭弹窗</div>
+
+<script>
+    (function(){
+        // ======================= 可自定义参数 (与原Python完全一致) =======================
+        const WINDOW_WIDTH = 180;
+        const WINDOW_HEIGHT = 80;
+        const HEART_STEP = 3;            // 爱心轮廓步长(度)
+        const HEART_SPEED = 30;           // 爱心弹窗间隔 (毫秒)
+        const HEART_STAY = 2000;          // 爱心停留时间 (毫秒)
+        const RANDOM_COUNT = 150;         // 随机弹窗数量
+        const RANDOM_SPEED = 25;          // 随机弹窗间隔 (毫秒)
+
+        const MESSAGES = [
+            "好好爱自己", "顺顺利利", "别熬夜", "多喝水哦~",
+            "好好吃饭", "我想你了", "天冷了多穿衣服", "保持好心情"
+        ];
+
+        const BG_COLORS = [
+            "#ffb6c1", "#98fb98", "#87cefa", "#fffacd", "#dda0dd"
+        ];
+
+        // ======================= 核心逻辑类 =======================
+        class PopupApp {
+            constructor() {
+                // 获取视口真实宽高 (屏幕可视区域)
+                this.screenWidth = window.innerWidth;
+                this.screenHeight = window.innerHeight;
+                
+                // 存储所有弹窗DOM元素
+                this.allPopups = [];
+                
+                // 爱心点列表 [{x, y}]
+                this.heartPoints = [];
+                this.currentHeartIndex = 0;
+                
+                // 定时器ID
+                this.heartTimer = null;      // 爱心逐帧创建定时器
+                this.heartCloseTimer = null; // 爱心结束后关闭定时器
+                this.randomTimer = null;      // 随机弹窗定时器
+                
+                // 随机弹窗计数器
+                this.randomStepCount = 0;
+                
+                // 爱心缩放系数 (基于短边80%)
+                this.heartScale = 1.0;
+                this.centerX = this.screenWidth / 2;
+                this.centerY = this.screenHeight / 2;
+                
+                // 是否正在执行爱心阶段 (防止干扰)
+                this.isHeartPhase = false;
+                this.isRandomPhase = false;
+                
+                // 计算爱心缩放系数 (同原python: 短边*0.8 / 32)
+                this.calcHeartScale();
+                
+                // 预生成爱心轮廓点 (依赖缩放系数 & 中心点)
+                this.generateHeartPoints();
+                
+                // 延迟启动动画 (仿原python root.after 100ms)
+                setTimeout(() => {
+                    this.startAnimation();
+                }, 100);
+                
+                // 监听窗口resize: 重新计算屏幕大小、爱心比例 & 点集 (为了体验友好，重新初始化)
+                // 注意：原python无resize响应，但为了弹窗不跑偏，刷新一下逻辑，但不清除现有弹窗更好
+                // 但如果在动画中途改变窗口大小，会导致爱心路径偏移，不过属于边界操作，简单提示刷新或重新开始？
+                // 为保证体验，若resize时不在关键动画阶段就重置（类似重新初始化）但会打断现有弹窗，不如禁止自动重置
+                // 更优雅: 监听resize时仅更新屏幕宽高，但不打断现有流程，爱心阶段已经结束就不会有影响，随机阶段无影响。
+                // 但如果爱心阶段中途resize，会导致后续点坐标偏差，为简单，不自动重新计算爱心路径，用户可手动刷新。
+                // 但为了严谨，只更新宽高存储，爱心已经生成的路径保留原本（因为坐标基于旧视口），不再变化。
+                window.addEventListener('resize', () => {
+                    this.screenWidth = window.innerWidth;
+                    this.screenHeight = window.innerHeight;
+                    // 注意：已经生成的爱心点不会改变，但如果爱心阶段尚未开始或者还没生成点，下次start会重新生成
+                    // 为了避免奇怪行为，不重新生成点，保持原始生成的坐标（可能会越界，但概率小）
+                    // 对随机阶段的新弹窗边界控制会基于新屏幕尺寸做约束，所以没问题
+                });
+            }
+            
+            // 计算爱心缩放系数 (基于当前屏幕短边)
+            calcHeartScale() {
+                const shortSide = Math.min(this.screenWidth, this.screenHeight);
+                const targetWidth = shortSide * 0.8;
+                this.heartScale = Math.max(targetWidth / 32, 1.0);
+            }
+            
+            // 生成爱心轮廓点 (公式与原python完全相同)
+            generateHeartPoints() {
+                const points = [];
+                const centerX = this.centerX;
+                const centerY = this.centerY;
+                const scale = this.heartScale;
+                
+                // 角度步长 HEART_STEP 度
+                for (let angle = 0; angle < 360; angle += HEART_STEP) {
+                    const rad = angle * Math.PI / 180;
+                    // 心形参数方程
+                    const xRaw = 16 * Math.pow(Math.sin(rad), 3);
+                    const yRaw = 13 * Math.cos(rad) - 5 * Math.cos(2*rad) - 2 * Math.cos(3*rad) - Math.cos(4*rad);
+                    // 缩放 + 偏移中心
+                    let x = centerX + scale * xRaw;
+                    let y = centerY - scale * yRaw;   // 注意y轴方向: 屏幕向下为正, 公式原坐标系向上为正, 因此减去
+                    points.push({ x: Math.round(x), y: Math.round(y) });
+                }
+                this.heartPoints = points;
+            }
+            
+            // 清理所有弹窗 + 取消所有定时器
+            cleanup() {
+                // 取消所有正在进行的定时器
+                if (this.heartTimer) {
+                    clearTimeout(this.heartTimer);
+                    this.heartTimer = null;
+                }
+                if (this.heartCloseTimer) {
+                    clearTimeout(this.heartCloseTimer);
+                    this.heartCloseTimer = null;
+                }
+                if (this.randomTimer) {
+                    clearTimeout(this.randomTimer);
+                    this.randomTimer = null;
+                }
+                
+                // 销毁所有弹窗
+                for (let i = this.allPopups.length-1; i >= 0; i--) {
+                    const popup = this.allPopups[i];
+                    if (popup && popup.parentNode) {
+                        popup.parentNode.removeChild(popup);
+                    }
+                }
+                this.allPopups = [];
+                
+                // 重置计数器 & 阶段标记
+                this.currentHeartIndex = 0;
+                this.randomStepCount = 0;
+                this.isHeartPhase = false;
+                this.isRandomPhase = false;
+            }
+            
+            // 开始动画 (爱心阶段 -> 停留后 -> 随机阶段)
+            startAnimation() {
+                // 完全重置状态
+                this.cleanup();
+                // 重新计算屏幕宽高 (确保最新)
+                this.screenWidth = window.innerWidth;
+                this.screenHeight = window.innerHeight;
+                this.centerX = this.screenWidth / 2;
+                this.centerY = this.screenHeight / 2;
+                this.calcHeartScale();
+                this.generateHeartPoints();    // 重新生成爱心点
+                this.currentHeartIndex = 0;
+                
+                // 开始爱心阶段
+                this.isHeartPhase = true;
+                this.spawnHeartStep();
+            }
+            
+            // 爱心逐点生成弹窗
+            spawnHeartStep() {
+                if (!this.isHeartPhase) return;
+                
+                if (this.currentHeartIndex < this.heartPoints.length) {
+                    const point = this.heartPoints[this.currentHeartIndex];
+                    // 计算弹窗左上角坐标 (使弹窗中心对准爱心点)
+                    let winX = point.x - WINDOW_WIDTH / 2;
+                    let winY = point.y - WINDOW_HEIGHT / 2;
+                    // 边界约束 (确保弹窗完全在屏幕内)
+                    winX = Math.max(0, Math.min(winX, this.screenWidth - WINDOW_WIDTH));
+                    winY = Math.max(0, Math.min(winY, this.screenHeight - WINDOW_HEIGHT));
+                    
+                    this.createPopup(winX, winY);
+                    this.currentHeartIndex++;
+                    
+                    // 继续下一个爱心弹窗
+                    this.heartTimer = setTimeout(() => {
+                        this.spawnHeartStep();
+                    }, HEART_SPEED);
+                } else {
+                    // 爱心轮廓所有弹窗生成完毕，设定停留时间后关闭所有爱心窗口
+                    this.heartTimer = null;
+                    this.heartCloseTimer = setTimeout(() => {
+                        this.closeAllHeartWindows();
+                    }, HEART_STAY);
+                }
+            }
+            
+            // 关闭所有爱心阶段的弹窗，并开启随机弹窗阶段
+            closeAllHeartWindows() {
+                // 清除所有窗口 (只清除现存的所有弹窗)
+                for (let i = this.allPopups.length-1; i >= 0; i--) {
+                    const popup = this.allPopups[i];
+                    if (popup && popup.parentNode) {
+                        popup.parentNode.removeChild(popup);
+                    }
+                }
+                this.allPopups = [];
+                // 重置爱心阶段标记
+                this.isHeartPhase = false;
+                
+                // 重置随机计数器并开始随机弹窗
+                this.randomStepCount = 0;
+                this.isRandomPhase = true;
+                this.spawnRandomStep();
+            }
+            
+            // 随机弹窗逐步生成 (间隔RANDOM_SPEED)
+            spawnRandomStep() {
+                if (!this.isRandomPhase) return;
+                
+                if (this.randomStepCount < RANDOM_COUNT) {
+                    // 随机位置 (边界确保完全可见)
+                    let x = Math.random() * (this.screenWidth - WINDOW_WIDTH);
+                    let y = Math.random() * (this.screenHeight - WINDOW_HEIGHT);
+                    x = Math.max(0, Math.min(x, this.screenWidth - WINDOW_WIDTH));
+                    y = Math.max(0, Math.min(y, this.screenHeight - WINDOW_HEIGHT));
+                    
+                    this.createPopup(x, y);
+                    this.randomStepCount++;
+                    
+                    this.randomTimer = setTimeout(() => {
+                        this.spawnRandomStep();
+                    }, RANDOM_SPEED);
+                } else {
+                    // 随机弹窗全部生成完毕，清除定时器标记
+                    this.randomTimer = null;
+                    this.isRandomPhase = false;
+                }
+            }
+            
+            // 创建单个弹窗 (绑定拖拽 + 右键关闭)
+            createPopup(x, y) {
+                // 随机选取消息和背景色
+                const msg = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
+                const bgColor = BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)];
+                
+                // 创建弹窗容器
+                const popupDiv = document.createElement('div');
+                popupDiv.className = 'floating-popup';
+                popupDiv.style.left = `${x}px`;
+                popupDiv.style.top = `${y}px`;
+                popupDiv.style.backgroundColor = bgColor;
+                popupDiv.style.width = `${WINDOW_WIDTH}px`;
+                popupDiv.style.height = `${WINDOW_HEIGHT}px`;
+                
+                // 内部文字
+                const textSpan = document.createElement('div');
+                textSpan.className = 'popup-text';
+                textSpan.innerText = msg;
+                popupDiv.appendChild(textSpan);
+                
+                // 优雅小提示 (右键关闭)
+                const hintSpan = document.createElement('div');
+                hintSpan.className = 'popup-close-hint';
+                hintSpan.innerText = '✖ 右键关闭';
+                popupDiv.appendChild(hintSpan);
+                
+                document.body.appendChild(popupDiv);
+                
+                // 存储到数组中 (便于统一清理)
+                this.allPopups.push(popupDiv);
+                
+                // ----- 拖拽功能 (左键拖动, 完全模拟python tkinter 左键拖动) -----
+                this.makeDraggable(popupDiv);
+                
+                // ----- 右键关闭弹窗 -----
+                popupDiv.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();  // 阻止浏览器右键菜单
+                    this.destroyPopup(popupDiv);
+                });
+                
+                return popupDiv;
+            }
+            
+            // 使单个弹窗可拖拽 (鼠标左键)
+            makeDraggable(element) {
+                let startX = 0, startY = 0;
+                let startLeft = 0, startTop = 0;
+                let isDragging = false;
+                
+                const onMouseDown = (e) => {
+                    // 只允许左键拖动 (button === 0)
+                    if (e.button !== 0) return;
+                    e.preventDefault();
+                    // 记录起始鼠标坐标 (相对于视口)
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    // 记录元素当前left/top (解析浮点数)
+                    const leftVal = element.style.left;
+                    const topVal = element.style.top;
+                    startLeft = parseFloat(leftVal);
+                    startTop = parseFloat(topVal);
+                    if (isNaN(startLeft)) startLeft = 0;
+                    if (isNaN(startTop)) startTop = 0;
+                    isDragging = true;
+                    
+                    // 全局事件
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                    element.style.cursor = 'grabbing';
+                };
+                
+                const onMouseMove = (e) => {
+                    if (!isDragging) return;
+                    e.preventDefault();
+                    let dx = e.clientX - startX;
+                    let dy = e.clientY - startY;
+                    let newLeft = startLeft + dx;
+                    let newTop = startTop + dy;
+                    // 边界限制 (不超出屏幕)
+                    const maxLeft = this.screenWidth - WINDOW_WIDTH;
+                    const maxTop = this.screenHeight - WINDOW_HEIGHT;
+                    newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+                    newTop = Math.max(0, Math.min(newTop, maxTop));
+                    
+                    element.style.left = `${newLeft}px`;
+                    element.style.top = `${newTop}px`;
+                };
+                
+                const onMouseUp = () => {
+                    isDragging = false;
+                    element.style.cursor = 'move';
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                };
+                
+                element.addEventListener('mousedown', onMouseDown);
+                // 防止弹窗内文字拖拽时产生默认行为
+                element.ondragstart = (e) => e.preventDefault();
+                element.style.cursor = 'move';
+            }
+            
+            // 销毁单个弹窗，并从数组中移除
+            destroyPopup(popup) {
+                const index = this.allPopups.indexOf(popup);
+                if (index !== -1) {
+                    this.allPopups.splice(index, 1);
+                }
+                if (popup && popup.parentNode) {
+                    popup.parentNode.removeChild(popup);
+                }
+            }
+        }
+        
+        // 启动应用 (页面完全加载后)
+        window.addEventListener('load', () => {
+            window.app = new PopupApp();
+        });
+    })();
+</script>
+</body>
+</html>
